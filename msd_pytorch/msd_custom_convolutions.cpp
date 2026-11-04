@@ -32,7 +32,7 @@ void checkKernel3x3(CheckedFrom c, torch::Tensor kernel) {
         TORCH_CHECK(kernel.size(3) == 3, "Kernel shape must be 3x3x3");
         TORCH_CHECK(kernel.size(4) == 3, "Kernel shape must be 3x3x3");
     } else {
-        TORCH_CHECK(false, "Expected 4 or 5 dimensional kernel.")
+        TORCH_CHECK(false, "Expected 4 or 5 dimensional kernel.");
     }
 }
 
@@ -341,7 +341,7 @@ void conv_relu_backward_bias(torch::Tensor output,
 //                             Module declaration                            //
 ///////////////////////////////////////////////////////////////////////////////
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-    m.def("conv_forward", &conv_forward, "Forward convolution"
+    m.def("conv_forward", &conv_forward, "Forward convolution",
           "input"_a, "kernel"_a, "bias"_a, "output"_a, "dilation"_a,
           "block_size"_a);
     m.def("conv_backward_x", &conv_backward_x, "Transpose of the forward convolution",
@@ -354,7 +354,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
           "grad_output"_a, "grad_bias"_a,
           "block_size"_a);
 
-    m.def("conv_relu_forward", &conv_relu_forward, "Forward convolution"
+    m.def("conv_relu_forward", &conv_relu_forward, "Forward convolution",
           "input"_a, "kernel"_a, "bias"_a, "output"_a, "dilation"_a,
           "block_size"_a);
     m.def("conv_relu_backward_x", &conv_relu_backward_x, "Transpose of the forward convolution",

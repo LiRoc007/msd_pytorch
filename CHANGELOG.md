@@ -6,8 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- PyTorch 2.15.0 and Python 3.11+ source-build support, including Windows CUDA builds.
+- Forward/backward reference tests for 2D/3D blocks, frozen weights, reusable buffers, and CUDA streams.
 ### Fixed
+- CUDA device/stream dispatch, cross-translation-unit kernel linking, and C++ binding syntax.
+- Autograd mutation tracking and the reverse-layer index used for frozen weights.
+- Checkpoint loading with `weights_only=True` and current Python/NumPy image utilities.
 ### Removed
+- Legacy `distutils`, `pytest-runner`, and private PyTorch Ninja build commands.
 
 
 ## [0.10.1] - 2021-05-26

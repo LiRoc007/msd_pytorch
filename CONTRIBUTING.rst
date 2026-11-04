@@ -39,18 +39,13 @@ If you are proposing a feature:
 Building from source
 --------------------
 
-Pytorch versions >= 1.7
-~~~~~~~~~~~~~~~~~~~~~~
+Install CUDA-enabled PyTorch 2.15.0, the matching CUDA toolkit, and a
+compatible C++ compiler, then run::
 
-Use the following:
+    python -m pip install setuptools wheel ninja
+    python -m pip install --no-build-isolation -e .[dev]
+    python -m pytest msd_pytorch/tests -m "not slow"
 
-    $ CC=/opt/sw/gcc-7.3.0/bin/gcc CXX=/opt/sw/gcc-7.3.0/bin/g++ python setup.py emit_ninja
-
-
-
-Pytorch versions < 1.7
-~~~~~~~~~~~~~~~~~~~~~~
-
-Use the following:
-
-    $ CC=/opt/sw/gcc-7.3.0/bin/gcc GXX=/opt/sw/gcc-7.3.0/bin/ CXX=/opt/sw/gcc-7.3.0/bin/g++ python setup.py emit_ninja
+On Windows use an x64 Native Tools Command Prompt. On Linux set ``CXX`` if
+the default compiler is incompatible with the CUDA toolkit. See README.md
+for installation and GPU architecture selection.

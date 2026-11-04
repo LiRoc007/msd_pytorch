@@ -42,7 +42,8 @@ class Conv2dFunction(Function):
     def forward(ctx, input, weight, bias, output, stride, dilation):
         ctx.save_for_backward(input, weight, bias)
         ctx.dilation = dilation
-        conv2d_forward(input, weight, bias, output.data, dilation)
+        conv2d_forward(input, weight, bias, output, dilation)
+        ctx.mark_dirty(output)
         return output
 
     @staticmethod
@@ -64,10 +65,12 @@ class Conv2dFunction(Function):
         grad_bias = t.zeros_like(bias)
         conv2d_backward_bias(grad_output, grad_bias)
 
-        return grad_input, grad_weight, grad_bias, None, None, None, None
+        return grad_input, grad_weight, grad_bias, None, None, None
 
 
-conv2d = Conv2dFunction.apply
+def conv2d(input, weight, bias, output, stride, dilation):
+    # The reusable output buffer must not retain the previous autograd graph.
+    return Conv2dFunction.apply(input, weight, bias, output.detach(), stride, dilation)
 
 
 class Conv2dModule(nn.Module):
@@ -93,7 +96,8 @@ class Conv2dReluFunction(Function):
     @staticmethod
     def forward(ctx, input, weight, bias, output, stride, dilation):
         ctx.dilation = dilation
-        conv2d_relu_forward(input, weight, bias, output.data, dilation)
+        conv2d_relu_forward(input, weight, bias, output, dilation)
+        ctx.mark_dirty(output)
         ctx.save_for_backward(input, output, weight, bias)
         return output
 
@@ -120,10 +124,11 @@ class Conv2dReluFunction(Function):
         grad_bias = t.zeros_like(bias)
         conv2d_relu_backward_bias(output, grad_output, grad_bias)
 
-        return grad_input, grad_weight, grad_bias, None, None, None, None
+        return grad_input, grad_weight, grad_bias, None, None, None
 
 
-conv2d_relu = Conv2dReluFunction.apply
+def conv2d_relu(input, weight, bias, output, stride, dilation):
+    return Conv2dReluFunction.apply(input, weight, bias, output.detach(), stride, dilation)
 
 
 class Conv2dReluModule(nn.Module):

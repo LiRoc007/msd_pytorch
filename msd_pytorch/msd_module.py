@@ -51,7 +51,7 @@ def init_convolution_weights(conv_weight, c_in, c_out, width, depth):
     # The number of parameters in the convolution depends on whether
     # the convolution is 2D or 3D. We multiply all non-channel
     # dimensions of the weight here to get the right answer.
-    num_params = np.product(conv_weight.shape[2:])
+    num_params = np.prod(conv_weight.shape[2:])
     num_channels = num_params * (c_in + width * (depth - 1)) + c_out
     std_dev = sqrt(2 / num_channels)
     conv_weight.normal_(0, std_dev)

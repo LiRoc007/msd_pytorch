@@ -110,7 +110,7 @@ class MSDBlockFunction(torch.autograd.Function):
 
             # Gradient w.r.t weights
             IDX_WEIGHT_START = 3            # The first weight has index 3 in the forward pass.
-            if ctx.needs_input_grad[i + IDX_WEIGHT_START]:
+            if ctx.needs_input_grad[idx + IDX_WEIGHT_START]:
                 sub_grad_weight = torch.zeros_like(sub_weight)
                 conv_relu_backward_k(
                     sub_result, sub_grad_output, sub_input, sub_grad_weight, dilation

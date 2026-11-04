@@ -60,7 +60,7 @@ test-all: ## run tests on every Python version with tox
 	tox
 
 coverage: ## check code coverage quickly with the default Python
-	coverage run setup.py test
+	coverage run -m pytest
 	coverage report -m
 	coverage html
 	$(BROWSER) htmlcov/index.html
@@ -81,12 +81,10 @@ servedocs: docs ## compile the docs watching for changes
 	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C doc_sources html' -R -D .
 
 install: clean ## install the package to the active Python's site-packages
-	python setup.py install
+	python -m pip install --no-build-isolation .
 
 install_dev:
-	# conda install pytorch=1.0.1 cudatoolkit=10.0 -c pytorch
-	# https://stackoverflow.com/a/28842733
-	pip install -e .[dev]
+	python -m pip install --no-build-isolation -e .[dev]
 
 conda_package:
 	conda install conda-build conda-verify -y

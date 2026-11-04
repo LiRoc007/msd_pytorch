@@ -15,24 +15,24 @@ manager](https://www.anaconda.com/download/) for Python 3.
 
 ### Requirements
 
-This package requires
+This port targets **PyTorch 2.15.0** and Python 3.11 or newer.
+It requires an NVIDIA GPU, a CUDA-enabled PyTorch installation, the matching
+CUDA toolkit (including `nvcc`), and a C++20-compatible compiler. Linux x64 and
+Windows x64 are supported. On Windows, install Visual Studio C++ Build Tools
+and run the build from an **x64 Native Tools Command Prompt**.
 
-- Linux x64
-- CUDA 10.0 and/or 11.0 compatible graphics card
-- [Anaconda package manager](https://www.anaconda.com/download/)
-
-This package is compatible with python 3.7, 3.8, and 3.9.
+The original memory-efficient CUDA kernels, symmetric boundary padding, model
+architecture, and state-dict keys are preserved. The custom kernels support
+`float32` and `float64`; CPU execution and automatic mixed precision are not
+supported.
 
 ### Installing with Conda
 
-The following instructions install msd_pytorch with pytorch version 1.8.1:
-```
-conda install msd_pytorch=0.10.1 cudatoolkit=11.1 -c aahendriksen -c pytorch -c defaults -c conda-forge
-conda install msd_pytorch=0.10.1 cudatoolkit=10.2 -c aahendriksen -c pytorch -c defaults -c conda-forge
-```
-
-**Note**: The order of the channels is important. If you install pytorch from
-the default conda channel or from conda-forge, installation might fail.
+The old prebuilt Conda packages target PyTorch 1.8.1. For this port, create an
+environment with `conda create -n msd-torch215 python=3.12 pip`, activate it,
+and use the source installation below.
+The legacy `conda/` recipes and GitLab release jobs are for old releases;
+this port uses the pip source build.
 
 ### Installing from source
 
@@ -41,22 +41,40 @@ installed. Specifically, you need `nvcc` and a compatible C++
 compiler. Moreover, you need to have a working installation of
 PyTorch.
 
-To get the source code, simply clone this GitHub project.
-``` shell
-git clone https://github.com/ahendriksen/msd_pytorch.git
+Clone this repository:
+
+```bash
+git clone https://github.com/LiRoc007/msd_pytorch.git
 cd msd_pytorch
 ```
 
-Using pip to install the package automatically triggers the
-compilation of the native C++ and CUDA code. So you need to direct the
-installer to a CUDA-compatible C++ compiler in this way:
-``` shell
-CC=/path/to/compatible/cpp/compiler pip install -e .[dev]
+Install PyTorch first. For CUDA 13.4, for example:
+
+```bash
+python -m pip install torch==2.15.0 --index-url https://download.pytorch.org/whl/cu134
+python -m pip install setuptools wheel ninja
+python -m pip install --no-build-isolation -e .
 ```
-Or, if the standard C++ compiler is compatible with CUDA:
-``` shell
-pip install -e .[dev]
+
+Use the [PyTorch installer](https://pytorch.org/get-started/locally/) for other
+CUDA builds. The toolkit used to compile this extension should match
+`torch.version.cuda`. Set `CUDA_HOME` if it is not detected, and `CXX` if a
+particular host compiler is required. Build isolation is disabled above so the
+extension is built against the PyTorch already installed in your environment.
+On machines without a visible GPU during compilation, set
+`TORCH_CUDA_ARCH_LIST` to the deployment GPU's compute capability.
+
+Run the tests on a CUDA GPU:
+
+```bash
+python -m pip install pytest
+python -m pytest msd_pytorch/tests -m "not slow"
+python -m pytest msd_pytorch/tests/test_torch_compatibility.py
 ```
+
+This includes 2D/3D forward and backward comparisons with native PyTorch
+autograd, frozen parameters, non-default CUDA streams, and the existing
+regression/segmentation training and checkpoint tests.
 
 ### Running the examples
 

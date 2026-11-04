@@ -1,6 +1,9 @@
 // -*- eval:(c++-mode); c-file-style: "bsd"; -*-
 #include <tuple>
-#include <torch/extension.h>
+#include <torch/types.h>
+#include <ATen/Dispatch.h>
+#include <c10/cuda/CUDAGuard.h>
+#include <c10/cuda/CUDAException.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 
@@ -12,41 +15,8 @@
 #include "device_tensor.h"
 #include "kernels.cuh"
 
-/**
- * A OptionalDeviceGuard is an RAII class that sets a device to some value on
- * initialization, and resets the device to its original value on destruction.
- * Morally, a OptionalDeviceGuard is equivalent to optional<DeviceGuard>, but
- * with extra constructors and methods as appropriate.
- *
- * Unlike DeviceGuard, a OptionalDeviceGuard may be uninitialized.  This occurs
- * when you use the nullary constructor, or pass a nullopt to the constructor.
- * Uninitialized OptionalDeviceGuards do *nothing*; they do not know what the
- * original device was and they do not reset on destruction.  This is why
- * original_device() and current_device() return optional<Device> rather than
- * Device (as they do in DeviceGuard), and also is why we didn't just
- * provide OptionalDeviceGuard by default and hide DeviceGuard from users.
- *
- * The semantics of an OptionalDeviceGuard are exactly explained by thinking
- * of it as an optional<DeviceGuard>.  In particular, an initialized
- * OptionalDeviceGuard doesn't restore device to its value at construction; it
- * restores device to its value *at initialization*.  So if you have the
- * program:
- *
- *     setDevice(1);
- *     OptionalDeviceGuard g;
- *     setDevice(2);
- *     g.set_device(3);  // initializes!
- *
- * On destruction, g will reset device to 2, rather than 1.
- *
- * An uninitialized OptionalDeviceGuard is distinct from a (initialized)
- * DeviceGuard whose original_device_ and current_device_ match, since the
- * DeviceGuard will still reset the device to original_device_.
- */
-// from: torch/include/c10/core/DeviceGuard.h
-// We use the OptionalDeviceGuard for multi-GPU programming to make
-// sure that the computations take place where the data is.
-using torch::OptionalDeviceGuard;
+// Guard the input device before selecting its current CUDA stream.
+using c10::cuda::OptionalCUDAGuard;
 
 
 // https://github.com/ClementPinard/extension-cpp/blob/deviceTensorExperiments/cuda/lltm_cuda_kernel.cu
@@ -73,10 +43,7 @@ toDeviceTensor(torch::Tensor x) {
 
 
 void check_cuda_error() {
-    cudaError err = cudaGetLastError();
-    if(err != cudaSuccess) {
-	AT_ERROR("Cuda error=", err, " : ", cudaGetErrorString(err));
-    }
+    C10_CUDA_KERNEL_LAUNCH_CHECK();
 }
 
 /**
@@ -98,8 +65,8 @@ void conv_cuda_forward(torch::Tensor input_t,
 		       torch::Tensor out_t,
 		       int dilation,
 		       std::tuple<int, int, int> block_size) {
-    OptionalDeviceGuard device_guard(device_of(input_t));
-    cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+    OptionalCUDAGuard device_guard(input_t.device());
+    cudaStream_t stream = c10::cuda::getCurrentCUDAStream();
 
     int block_z, block_y, block_x;
     std::tie(block_z, block_y, block_x) = block_size;
@@ -151,8 +118,8 @@ void conv_cuda_backward_x(torch::Tensor grad_output_t,
                           torch::Tensor grad_input_t,
                           int dilation,
 			  std::tuple<int, int, int> block_size){
-    OptionalDeviceGuard device_guard(torch::device_of(grad_output_t));
-    cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+    OptionalCUDAGuard device_guard(grad_output_t.device());
+    cudaStream_t stream = c10::cuda::getCurrentCUDAStream();
 
     int block_z, block_y, block_x;
     std::tie(block_z, block_y, block_x) = block_size;
@@ -196,8 +163,8 @@ void conv_cuda_backward_k(torch::Tensor grad_output, torch::Tensor input,
                           torch::Tensor grad_kernel,
                           int dilation, std::tuple<int, int, int> block_size)
 {
-    OptionalDeviceGuard device_guard(torch::device_of(grad_output));
-    cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+    OptionalCUDAGuard device_guard(grad_output.device());
+    cudaStream_t stream = c10::cuda::getCurrentCUDAStream();
 
     int block_z, block_y, block_x;
     std::tie(block_z, block_y, block_x) = block_size;
@@ -248,8 +215,8 @@ void conv_relu_cuda_forward(torch::Tensor input_t,
 			    torch::Tensor out_t,
 			    int dilation,
 			    std::tuple<int, int, int> block_size) {
-    OptionalDeviceGuard device_guard(device_of(input_t));
-    cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+    OptionalCUDAGuard device_guard(input_t.device());
+    cudaStream_t stream = c10::cuda::getCurrentCUDAStream();
 
     int block_z, block_y, block_x;
     std::tie(block_z, block_y, block_x) = block_size;
@@ -300,8 +267,8 @@ void conv_relu_cuda_backward_x(torch::Tensor output_t,
                                torch::Tensor grad_input_t,
                                int dilation,
                                std::tuple<int, int, int> block_size) {
-    OptionalDeviceGuard device_guard(device_of(grad_output_t));
-    cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+    OptionalCUDAGuard device_guard(grad_output_t.device());
+    cudaStream_t stream = c10::cuda::getCurrentCUDAStream();
 
     int block_z, block_y, block_x;
     std::tie(block_z, block_y, block_x) = block_size;
@@ -349,8 +316,8 @@ void conv_relu_cuda_backward_k(torch::Tensor output, torch::Tensor grad_output, 
                                torch::Tensor grad_kernel,
                                int dilation, std::tuple<int, int, int> block_size)
 {
-    OptionalDeviceGuard device_guard(device_of(grad_output));
-    cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+    OptionalCUDAGuard device_guard(grad_output.device());
+    cudaStream_t stream = c10::cuda::getCurrentCUDAStream();
 
     int block_z, block_y, block_x;
     std::tie(block_z, block_y, block_x) = block_size;
@@ -398,8 +365,8 @@ void conv_relu_cuda_backward_bias(torch::Tensor output,
                                   torch::Tensor grad_bias,
                                   std::tuple<int, int, int> block_size)
 {
-    OptionalDeviceGuard device_guard(device_of(grad_output));
-    cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+    OptionalCUDAGuard device_guard(grad_output.device());
+    cudaStream_t stream = c10::cuda::getCurrentCUDAStream();
 
     int block_z, block_y, block_x;
     std::tie(block_z, block_y, block_x) = block_size;
