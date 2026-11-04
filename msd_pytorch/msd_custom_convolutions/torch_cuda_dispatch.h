@@ -1,5 +1,6 @@
 #pragma once
 #include <tuple>
+#include <torch/types.h>
 
 void conv_cuda_forward(torch::Tensor input_t,
 		       torch::Tensor kernel_t,

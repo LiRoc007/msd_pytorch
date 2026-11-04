@@ -1,1 +1,2 @@
 include msd_pytorch/VERSION
+recursive-include msd_pytorch/msd_custom_convolutions *.h *.cuh

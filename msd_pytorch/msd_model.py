@@ -331,7 +331,7 @@ class MSDModel:
         :rtype: int
 
         """
-        state = t.load(path)
+        state = t.load(path, map_location=next(self.net.parameters()).device, weights_only=True)
 
         self.net.load_state_dict(state["state_dict"])
         self.optimizer.load_state_dict(state["optimizer"])

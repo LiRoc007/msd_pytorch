@@ -1,8 +1,8 @@
-import collections
+from collections.abc import Iterable
 import torch
 from torch.utils.data import Dataset
 import numpy as np
-import imageio
+import imageio.v2 as imageio
 import tifffile
 from pathlib import Path
 import re
@@ -47,7 +47,7 @@ def _convert_to_integral(img):
 def _relabel_image(img, labels):
     img = _convert_to_integral(img)
 
-    if isinstance(labels, collections.Iterable):
+    if isinstance(labels, Iterable):
         # Check for values in the image that are not in the label set:
         non_labels = set(np.unique(img)) - set(labels)
         if non_labels:
@@ -206,7 +206,7 @@ class ImageStack(object):
         """
         if self.labels is None:
             raise RuntimeError("This image stack has no labels")
-        elif isinstance(self.labels, collections.Iterable):
+        elif isinstance(self.labels, Iterable):
             return len(list(self.labels))
         else:
             return int(self.labels)

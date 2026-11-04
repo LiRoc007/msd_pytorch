@@ -1,7 +1,7 @@
 import msd_pytorch.image_dataset as img_ds
 import logging
 import tifffile
-import imageio
+import imageio.v2 as imageio
 import numpy as np
 import pytest
 from msd_pytorch.errors import InputError
@@ -12,7 +12,7 @@ def test_convert_to_integral():
     img = np.ones(10)
 
     assert np.mean(img_ds._convert_to_integral(img.astype(np.int8))) == 1
-    assert np.mean(img_ds._convert_to_integral(img.astype(np.bool))) == 1
+    assert np.mean(img_ds._convert_to_integral(img.astype(np.bool_))) == 1
     np.mean(img_ds._convert_to_integral((-img).astype(np.int8)))
 
     for t in [np.float16, np.float32, np.float64]:
@@ -55,7 +55,7 @@ def test_empty_stack(tmp_path, caplog):
 
 
 def test_stack_no_glob(tmp_path):
-    tifffile.imsave(tmp_path / "image.tif", np.ones((10, 10)))
+    tifffile.imwrite(tmp_path / "image.tif", np.ones((10, 10)))
     stack = img_ds.ImageStack(tmp_path)
     assert len(stack) == 1
 
@@ -63,12 +63,12 @@ def test_stack_no_glob(tmp_path):
 def test_image_stack(tmp_path):
     num_channels = 3
     for i in range(10):
-        img = np.random.randn(num_channels, 10, 10)
+        img = np.random.randint(0, 256, (num_channels, 10, 10), dtype=np.uint8)
         imageio.imsave(tmp_path / f"imio_{i}.png", img.swapaxes(0, 2))
         imageio.imsave(tmp_path / f"imio_{i}.jpeg", img.swapaxes(0, 2))
-        tifffile.imsave(tmp_path / f"tiff_{i}.tif", img)
-        tifffile.imsave(tmp_path / f"tiff2d_{i}.tif", img[0])
-        tifffile.imsave(tmp_path / f"tiff0_{i:05}.tif", img)
+        tifffile.imwrite(tmp_path / f"tiff_{i}.tif", img)
+        tifffile.imwrite(tmp_path / f"tiff2d_{i}.tif", img[0])
+        tifffile.imwrite(tmp_path / f"tiff0_{i:05}.tif", img)
 
     pngs = img_ds.ImageStack(tmp_path / "imio_*.png")
     pngs_c = img_ds.ImageStack(tmp_path / "imio_*.png", collapse_channels=True)
@@ -105,9 +105,9 @@ def test_image_stack_labels(tmp_path):
     num_labels = 10
     for i in range(10):
         img = np.random.randint(num_labels, size=(num_channels, 10, 10), dtype=np.uint8)
-        tifffile.imsave(tmp_path / f"tiff_{i}.tif", img)
-        tifffile.imsave(tmp_path / f"tiff2d_{i}.tif", img[0])
-        tifffile.imsave(tmp_path / f"tiff0_{i:05}.tif", img)
+        tifffile.imwrite(tmp_path / f"tiff_{i}.tif", img)
+        tifffile.imwrite(tmp_path / f"tiff2d_{i}.tif", img[0])
+        tifffile.imwrite(tmp_path / f"tiff0_{i:05}.tif", img)
 
     # Check for errors when there are missing labels:
     with pytest.raises(InputError):
@@ -137,12 +137,12 @@ def test_image_dataset(tmp_path):
     num_channels = 3
     for i in range(10):
         for purpose in ["train", "val"]:
-            img = np.random.randn(num_channels, 10, 10)
+            img = np.random.randint(0, 256, (num_channels, 10, 10), dtype=np.uint8)
             imageio.imsave(tmp_path / f"{purpose}_imio_{i}.png", img.swapaxes(0, 2))
             imageio.imsave(tmp_path / f"{purpose}_imio_{i}.jpeg", img.swapaxes(0, 2))
-            tifffile.imsave(tmp_path / f"{purpose}_tiff_{i}.tif", img)
-            tifffile.imsave(tmp_path / f"{purpose}_tiff2d_{i}.tif", img[0])
-            tifffile.imsave(tmp_path / f"{purpose}_tiff0_{i:05}.tif", img)
+            tifffile.imwrite(tmp_path / f"{purpose}_tiff_{i}.tif", img)
+            tifffile.imwrite(tmp_path / f"{purpose}_tiff2d_{i}.tif", img[0])
+            tifffile.imwrite(tmp_path / f"{purpose}_tiff0_{i:05}.tif", img)
 
     pngs = img_ds.ImageDataset(
         tmp_path / "train_imio_*.png", tmp_path / "val_imio_*.png"
